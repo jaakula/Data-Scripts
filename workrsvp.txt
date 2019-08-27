@@ -1,0 +1,29 @@
+drop table samplemenu;
+
+select * from MENUCATEGORY_BU_MAPPING where menucategory_id=51;
+
+select mi,menusubcategory_id from menuitem mi, menusubcategory msc, menucategory mc, MENUCATEGORY_BU_MAPPING;
+
+select distinct mc.id, mc.name from menuitem mi, menusubcategory msc,
+menucategory mc 
+where datetime>=to_date('08/07/2019, 12:00:00 AM','DD/MM/YYYY, HH:MI:SS AM')
+and mi.menusubcategory_id=msc.id and msc.menucategory_id=mc.id and mc.id not in(select menucategory_id from MENUCATEGORY_BU_MAPPING);
+
+select mi.* from  menuitem mi, menusubcategory msc,menucategory mc where datetime>=to_date('08/07/2019, 12:00:00 AM','DD/MM/YYYY, HH:MI:SS AM')
+and mi.menusubcategory_id=msc.id and msc.menucategory_id=mc.id and mc.id in(25,26,24,8,35,48,33);
+
+select mi.id from menuitem mi where datetime>=to_date('08/07/2019, 12:00:00 AM','DD/MM/YYYY, HH:MI:SS AM') and 
+menusubcategory_id in (select id from menusubcategory where menucategory_id not in(select menucategory_id from MENUCATEGORY_BU_MAPPING));
+
+select * from menusubcategory where id in(471,472,473,474);
+
+update MENUITEM_BU_MAPPING mbm set id=Menuitem_Bu_Mapping_seq.nextval, 
+MENUITEM_ID= (select mi.id from menuitem mi where datetime>=to_date('08/07/2019, 12:00:00 AM','DD/MM/YYYY, HH:MI:SS AM') and
+mi.id=mbm.MENUITEM_ID and
+menusubcategory_id in (select id from menusubcategory where menucategory_id not in(select menucategory_id from MENUCATEGORY_BU_MAPPING))),
+BUSINESSUNITS_ID=1;
+
+
+
+
+

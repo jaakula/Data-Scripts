@@ -1,0 +1,109 @@
+set SERVEROUTPUT ON;
+declare
+    lcategory      number;
+    lsubcategory   number;
+    lunit          number;
+    ltypearr       parse.arr_str;
+    ltype          number;
+    lcategorycount number default 0;
+begin
+    for data in(select * from samplemenu)
+    loop
+       
+            select count(id) into lcategorycount
+            from menucategory
+            where upper(name) = upper(trim(data.category));
+            
+            
+            
+           
+            
+           if (lcategorycount != 0) then
+               begin
+                insert into menucategory values(menucategory_pk_seq.nextval, 1, upper(data.category)||'new',null) returning id into lcategory;
+                insert into MENUCATEGORY_BU_MAPPING values(lcategory,1); 
+               exception when dup_val_on_index then
+                 null;
+               end;
+              
+            else
+              begin
+              insert into menucategory values(menucategory_pk_seq.nextval, 1, upper(data.category),null) returning id into lcategory;
+              insert into MENUCATEGORY_BU_MAPPING values(lcategory,1); 
+              exception when dup_val_on_index then
+                 null;
+               end;
+            end if;
+             
+       
+        begin
+            select id into lsubcategory
+            from menusubcategory
+            where menucategory_id = lcategory
+            and upper(subcategory) = upper(substr(data.subcategory,1,50));
+        exception
+            when no_data_found then
+                insert into menusubcategory values(menusubcategory_pk_seq.nextval, 1, lcategory,substr(data.subcategory,1,50),null) returning id into lsubcategory;
+--                select id into lsubcategory
+--                from menusubcategory
+--                where menucategory_id = lcategory
+--                and upper(subcategory) = upper(substr(data.subcategory,1,50));
+        end;
+        if data.unit is not null then
+            begin
+                select id into lunit
+                from unit
+                where unittype_id = 1
+                and upper(name) = upper(data.unit);
+            exception
+                when no_data_found then
+                    insert into unit values(unit_pk_seq.nextval, 1, data.unit,1,null) returning id into lunit;
+--                    select id into lunit from unit
+--                    where unittype_id = 1
+--                    and upper(name) = upper(data.unit);
+            end;
+        end if;
+      
+        Insert into MENUITEM    
+           (ID, SALESNAME, KITCHENNAME, DESCRIPTION, MENUSUBCATEGORY_ID, 
+            UNIT_ID, COST, TEMPERATURE, MINORDERQTY, 
+            SERVEDQTY,  NOTES,ACTIVE,  PRICE, USER_ID, 
+            DATETIME, showable, SORTORDER)
+         Values
+           (menuitem_pk_Seq.nextval, data.salesname, nvl(data.kitchenname,data.salesname), data.description, lsubcategory, 
+            lunit, data.cost,  substr(data.temperature,1,1), data.MINPRODQTY, 
+            data.SERVEDQTY, data.notes,1,data.price,-1, 
+            sysdate,1, data.sortorder);
+        begin   
+            if data.type is not null then
+                parse.parse_list(data.type,',',ltypearr);
+                if ltypearr.last>0 then
+                    for i in ltypearr.first .. ltypearr.last
+                        loop
+                            if ltypearr(i) is not null then
+                                begin
+                                    select id into ltype from menutype
+                                    where lower(type) = lower(trim(ltypearr(i)));
+                                exception
+                                    when no_data_found then
+                                        begin
+                                            insert into menutype values(menutype_pk_seq.nextval,1,trim(ltypearr(i)),null);
+                                        exception
+                                        when others then
+                                          dbms_output.put_line(ltypearr(i));
+                                        end;
+                                    select id into ltype from menutype where lower(type) = lower(trim(ltypearr(i)));
+                                end;
+                            end if;
+                            insert into menutypeassociations values(menuitem_pk_Seq.currval,ltype);
+                        end loop;
+                    end if;
+                end if;
+            end;
+        end loop;
+    --Commit;
+end;
+/
+
+
+
